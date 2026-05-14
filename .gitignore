@@ -1,0 +1,22 @@
+# Python virtual environment
+.venv/
+
+# Environment variables
+.env
+
+# PyCharm settings
+.idea/
+
+# Bytecode cache
+__pycache__/
+*.py[cod]
+
+# Jupyter Notebook checkpoints
+notebooks/.ipynb_checkpoints/
+
+# Ignore workbooks and just show finished products
+tableau_workbooks/General.twb
+
+anaconda_projects/
+
+notes.txt
