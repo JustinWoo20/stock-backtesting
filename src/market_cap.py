@@ -1,5 +1,4 @@
 import pandas as pd
-import sqlite3
 import yfinance as yf
 
 def get_yfinance_ticker(t):
@@ -24,21 +23,23 @@ def yfinance_get_shares(t):
     return df_shares
 
 
-def calc_market_cap(stock, balance):
+def calc_market_cap(t, balance):
     market_caps = []
 
     for year in balance:
         # Find filing date
         file_date = year['filingDate']
+        # Get yfinance object
+        yfinance_ticker = get_yfinance_ticker(t)
 
         # Find price on filing date
-        price_history = yfinance_historic_price(t=ticker)
+        price_history = yfinance_historic_price(t=yfinance_ticker)
         filing_date_stock_price = price_history[price_history['Date'] == file_date]
 
         # Convert file date to datetime for next step
         file_date = pd.to_datetime(file_date)
         # Find closest date on shares df
-        shares_history = yfinance_get_shares(t=ticker)
+        shares_history = yfinance_get_shares(t=yfinance_ticker)
         shares_history['Date'] = pd.to_datetime(shares_history['Date'])
         closest_date = (shares_history['Date'] - file_date).abs().idxmin()
         closest_row = shares_history.loc[closest_date]
