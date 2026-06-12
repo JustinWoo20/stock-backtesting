@@ -1,10 +1,4 @@
-from dotenv import load_dotenv
-import os
 import requests
-
-load_dotenv()
-
-fmg_key = os.getenv("FMG_API_KEY")
 
 def get_income_statement(t, key):
     # This function will return the income statement, balance sheet, and cash flow statement of a company
