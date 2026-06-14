@@ -1,6 +1,6 @@
 import pandas as pd
 from dotenv import load_dotenv
-from src import stock_list, market_cap, financial_statements
+from src import stock_list, market_cap, financial_statements, pb_ratio
 import os
 
 load_dotenv()
@@ -19,16 +19,25 @@ fmp_api_key = os.getenv('FMP_API_KEY')
 
 test_stocks = ['AAPL', 'TSLA', 'AMZN']
 
+# Find market cap and shareholder equity to calculate PB ratio
 market_caps_list = []
+shareholder_equity_list = []
 for stock in test_stocks:
     # Get balance sheet from financial modeling prep
     balance_sheet = financial_statements.get_balance_sheet(t=stock, key=fmp_api_key)
     # Calculate market cap
     mc = market_cap.calc_market_cap(t=stock, balance=balance_sheet)
     market_caps_list.append(mc)
+    # Get shareholder equity
+    shareholder_equity = pb_ratio.get_shareholder_equity(balance=balance_sheet)
+    shareholder_equity_list.append(shareholder_equity)
+
+
 market_cap_dict = dict(zip(test_stocks, market_caps_list))
 df_market_cap = pd.DataFrame.from_dict(market_cap_dict)
+shareholder_equity_dict = dict(zip(test_stocks, shareholder_equity_list))
+df_shareholder_equity = pd.DataFrame.from_dict(shareholder_equity_dict)
 
-#
-
-
+# Calculate PB Ratio
+df_pb_ratio = pb_ratio.calc_pb_ratio(market_cap=df_market_cap, shareholder_equity=df_shareholder_equity)
+print(df_pb_ratio)
