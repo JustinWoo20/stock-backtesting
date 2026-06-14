@@ -1,6 +1,6 @@
 import pandas as pd
 from dotenv import load_dotenv
-from src import stock_list, market_cap, financial_statements, pb_ratio
+from src import fiscal_years, stock_list, market_cap, financial_statements, pb_ratio
 import os
 
 load_dotenv()
@@ -31,7 +31,7 @@ for stock in test_stocks:
     # Get shareholder equity
     shareholder_equity = pb_ratio.get_shareholder_equity(balance=balance_sheet)
     shareholder_equity_list.append(shareholder_equity)
-
+    # Get fiscal years to add to the dataframe in the final step
 
 market_cap_dict = dict(zip(test_stocks, market_caps_list))
 df_market_cap = pd.DataFrame.from_dict(market_cap_dict)
@@ -40,4 +40,7 @@ df_shareholder_equity = pd.DataFrame.from_dict(shareholder_equity_dict)
 
 # Calculate PB Ratio
 df_pb_ratio = pb_ratio.calc_pb_ratio(market_cap=df_market_cap, shareholder_equity=df_shareholder_equity)
-print(df_pb_ratio)
+
+# Obtain fiscal years
+fiscal_years_list = fiscal_years.get_fiscal_years(balance=balance_sheet)
+df_pb_ratio.insert(loc=0, column='Fiscal Years', value=fiscal_years_list)
