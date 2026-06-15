@@ -1,6 +1,6 @@
 import pandas as pd
 from dotenv import load_dotenv
-from src import fiscal_years, stock_list, market_cap, financial_statements, pb_ratio
+from src import fiscal_years, stock_list, market_cap, financial_statements, pb_ratio, de_ratio
 import os
 
 load_dotenv()
@@ -22,6 +22,7 @@ test_stocks = ['AAPL', 'TSLA', 'AMZN']
 # Find market cap and shareholder equity to calculate PB ratio
 market_caps_list = []
 shareholder_equity_list = []
+total_debt_list = []
 for stock in test_stocks:
     # Get balance sheet from financial modeling prep
     balance_sheet = financial_statements.get_balance_sheet(t=stock, key=fmp_api_key)
@@ -31,16 +32,24 @@ for stock in test_stocks:
     # Get shareholder equity
     shareholder_equity = pb_ratio.get_shareholder_equity(balance=balance_sheet)
     shareholder_equity_list.append(shareholder_equity)
-    # Get fiscal years to add to the dataframe in the final step
+    # Get yearly total debt
+    total_debt = de_ratio.get_total_debt(balance=balance_sheet)
+    total_debt_list.append(total_debt)
 
 market_cap_dict = dict(zip(test_stocks, market_caps_list))
 df_market_cap = pd.DataFrame.from_dict(market_cap_dict)
 shareholder_equity_dict = dict(zip(test_stocks, shareholder_equity_list))
 df_shareholder_equity = pd.DataFrame.from_dict(shareholder_equity_dict)
+total_debt_dict = dict(zip(test_stocks, total_debt_list))
+df_total_debt = pd.DataFrame.from_dict(total_debt_dict)
 
 # Calculate PB Ratio
 df_pb_ratio = pb_ratio.calc_pb_ratio(market_cap=df_market_cap, shareholder_equity=df_shareholder_equity)
 
+# Calculate DE Ratio
+df_de_ratio = de_ratio.calc_de_ratio(debt=df_total_debt, shareholder_equity=df_shareholder_equity)
+
 # Obtain fiscal years
 fiscal_years_list = fiscal_years.get_fiscal_years(balance=balance_sheet)
 df_pb_ratio.insert(loc=0, column='Fiscal Years', value=fiscal_years_list)
+df_de_ratio.insert(loc=0, column='Fiscal Years', value=fiscal_years_list)
