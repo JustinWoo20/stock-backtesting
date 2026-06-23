@@ -1,7 +1,6 @@
 import numpy as np
 import yfinance as yf
 software_ind = ['Software - Application', 'Internet Content & Information',]
-#TODO: Refactor code to work with lists
 
 def get_industry(ticker, industry_list):
     # Obtain company industry to determine if manufacturing or non-manufacturing
