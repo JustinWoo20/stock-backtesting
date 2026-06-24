@@ -26,8 +26,10 @@ software_ind = ['Software - Application', 'Internet Content & Information',]
 de_ratio_list = []
 gross_profit_margin_list = []
 # market_cap_list = []
+net_income_growth_list = []
 pb_ratio_list = []
 # retained_earnings_list = []
+revenue_growth_list = []
 # sales_list = []
 shareholders_list = []
 # total_assets_list = []
@@ -61,12 +63,18 @@ for stock in test_stocks:
     # Market Cap for z score and pb ratio
     mc = statement_data.get_market_cap(km=key_metrics_stat)
     # market_cap_list.append(mc)
+    # Net Income Growth
+    nig = statement_data.get_net_income_growth(growth=income_growth_stat)
+    net_income_growth_list.append(nig)
     # P/B Ratio
     pb_ratio = statement_data.get_pb_ratio(financial_ratios_stat)
     pb_ratio_list.append(pb_ratio)
     # Retained Earnings for z-score
     retained_earnings = statement_data.get_retained_earnings(balance=balance_sheet)
     # retained_earnings_list.append(retained_earnings)
+    # Revenue Growth
+    revenue_growth = statement_data.get_revenue_growth(growth=income_growth_stat)
+    revenue_growth_list.append(revenue_growth)
     # Sales (revenue) for z-score
     sales = statement_data.get_sales(income=income_statement)
     # sales_list.append(sales)
@@ -101,10 +109,12 @@ for stock in test_stocks:
 # current_liabilities_dict = dict(zip(test_stocks, current_liabilities_list))
 de_ratio_dict = dict(zip(test_stocks, de_ratio_list))
 # ebit_dict = dict(zip(test_stocks, ebit_list))
-# gross_profit_margin_dict = dict(zip(test_stocks, gross_profit_margin_list))
+gross_profit_margin_dict = dict(zip(test_stocks, gross_profit_margin_list))
 # market_cap_dict = dict(zip(test_stocks, market_cap_list))
+net_income_growth_dict = dict(zip(test_stocks, net_income_growth_list))
 pb_ratio_dict = dict(zip(test_stocks, pb_ratio_list))
 # retained_earnings_dict = dict(zip(test_stocks, retained_earnings_list))
+revenue_growth_dict = dict(zip(test_stocks, revenue_growth_list))
 # sales_dict = dict(zip(test_stocks, sales_list))
 # shareholders_dict = dict(zip(test_stocks, shareholders_list))
 # total_assets_dict = dict(zip(test_stocks, total_assets_list))
@@ -117,21 +127,15 @@ z_score_dict = dict(zip(test_stocks, z_score_list))
 # df_current_liabilities = pd.DataFrame.from_dict(current_liabilities_dict)
 df_de_ratio = pd.DataFrame.from_dict(de_ratio_dict)
 # df_ebit = pd.DataFrame.from_dict(ebit_dict)
-# df_gpm = pd.DataFrame.from_dict(gross_profit_margin_dict)
+df_gpm = pd.DataFrame.from_dict(gross_profit_margin_dict)
 # df_market_cap = pd.DataFrame.from_dict(market_cap_dict)
+df_net_income_growth = pd.DataFrame.from_dict(net_income_growth_dict)
 df_pb_ratio = pd.DataFrame.from_dict(pb_ratio_dict)
 # df_retained_earnings = pd.DataFrame.from_dict(retained_earnings_dict)
+df_revenue_growth = pd.DataFrame.from_dict(revenue_growth_dict)
 # df_sales = pd.DataFrame.from_dict(sales_dict)
 # df_shareholders = pd.DataFrame.from_dict(shareholders_dict)
 # df_total_assets = pd.DataFrame.from_dict(total_assets_dict)
 # df_total_debt = pd.DataFrame.from_dict(total_debt_dict)
 # df_total_liabilities = pd.DataFrame.from_dict(total_liabilities_dict)
 df_z_score = pd.DataFrame.from_dict(z_score_dict)
-
-
-# D/E Ratio
-# Gross Profit Margin
-# P/B Ratio
-# Revenue Growth
-
-

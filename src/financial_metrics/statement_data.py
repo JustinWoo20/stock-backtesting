@@ -46,6 +46,14 @@ def get_market_cap(km):
 
     return market_cap
 
+def get_net_income_growth(growth):
+    net_income_growth = []
+    for year in growth:
+        growth = year['growthNetIncome']
+        net_income_growth.append(growth)
+
+    return net_income_growth
+
 def get_pb_ratio(fr):
     pb_list = []
     for year in fr:
@@ -61,6 +69,14 @@ def get_retained_earnings(balance):
         retained_earnings_list.append(retained_earnings)
 
     return retained_earnings_list
+
+def get_revenue_growth(growth):
+    revenue_growth = []
+    for year in growth:
+        growth = year['growthRevenue']
+        revenue_growth.append(growth)
+
+    return revenue_growth
 
 def get_sales(income):
     sales = []
