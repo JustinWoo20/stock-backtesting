@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 import pandas as pd
 import os
+import sqlite3 as sql
 from financial_metrics import altman_z_score
 from financial_metrics import financial_statements
 from financial_metrics import fiscal_years
@@ -20,21 +21,12 @@ software_ind = ['Software - Application', 'Internet Content & Information',]
 # D = market value of equity / total liabilities
 # E = sales / total assets
 
-# current_assets_list = []
-# current_liabilities_list = []
-# ebit_list = []
 de_ratio_list = []
 gross_profit_margin_list = []
-# market_cap_list = []
 net_income_growth_list = []
 pb_ratio_list = []
-# retained_earnings_list = []
 revenue_growth_list = []
-# sales_list = []
 shareholders_list = []
-# total_assets_list = []
-# total_debt_list = []
-# total_liabilities_list = []
 z_score_list = []
 
 for stock in test_stocks:
@@ -47,22 +39,18 @@ for stock in test_stocks:
     # Obtain data from financial statements
     # Current Assets for z-score
     current_assets = statement_data.get_current_assets(balance=balance_sheet)
-    # current_assets_list.append(current_assets)
     # Current liabilities for z-score
     current_liabilities = statement_data.get_current_liabilities(balance=balance_sheet)
-    # current_liabilities_list.append(current_liabilities)
     # D/E Ratio
     de_ratio = statement_data.get_de_ratio(fr=financial_ratios_stat)
     de_ratio_list.append(de_ratio)
     # ebit for z-score
     ebit = statement_data.get_ebit(income=income_statement)
-    # ebit_list.append(ebit)
     # Gross Profit Margins
     gpm = statement_data.get_gross_profit_margin(fr=financial_ratios_stat)
     gross_profit_margin_list.append(gpm)
     # Market Cap for z score and pb ratio
     mc = statement_data.get_market_cap(km=key_metrics_stat)
-    # market_cap_list.append(mc)
     # Net Income Growth
     nig = statement_data.get_net_income_growth(growth=income_growth_stat)
     net_income_growth_list.append(nig)
@@ -71,25 +59,17 @@ for stock in test_stocks:
     pb_ratio_list.append(pb_ratio)
     # Retained Earnings for z-score
     retained_earnings = statement_data.get_retained_earnings(balance=balance_sheet)
-    # retained_earnings_list.append(retained_earnings)
     # Revenue Growth
     revenue_growth = statement_data.get_revenue_growth(growth=income_growth_stat)
     revenue_growth_list.append(revenue_growth)
     # Sales (revenue) for z-score
     sales = statement_data.get_sales(income=income_statement)
-    # sales_list.append(sales)
-    # Shareholders equity for z-score, pb ratio, and de ratio
+    # Shareholders equity for z-score
     se = statement_data.get_shareholder_equity(balance=balance_sheet)
-    shareholders_list.append(se)
     # Total assets for z-score
     total_assets = statement_data.get_total_assets(balance=balance_sheet)
-    # total_assets_list.append(total_assets)
-    # Total debt for de ratio
-    td = statement_data.get_total_debt(balance=balance_sheet)
-    # total_debt_list.append(td)
     # Total liabilities for z-score
     total_liabilities = statement_data.get_total_liabilities(balance=balance_sheet)
-    #total_liabilities_list.append(total_liabilities)
     # Obtain company industry
     ind = altman_z_score.get_industry(ticker=stock, industry_list=software_ind)
     if ind:
@@ -104,44 +84,25 @@ for stock in test_stocks:
         z_score_list.append(z_score)
 
 # Get fiscal years
-fiscal_years_list = fiscal_years.get_fiscal_years(balance=financial_statements.get_balance_sheet(t=test_stocks[0], key=fmp_api_key))
+f_years = fiscal_years.get_fiscal_years(balance=financial_statements.get_balance_sheet(t=test_stocks[0], key=fmp_api_key))
+
 # Create dictionaries
-# current_assets_dict = dict(zip(test_stocks, current_assets_list))
-# current_liabilities_dict = dict(zip(test_stocks, current_liabilities_list))
 de_ratio_dict = dict(zip(test_stocks, de_ratio_list))
-# ebit_dict = dict(zip(test_stocks, ebit_list))
 gross_profit_margin_dict = dict(zip(test_stocks, gross_profit_margin_list))
-# market_cap_dict = dict(zip(test_stocks, market_cap_list))
 net_income_growth_dict = dict(zip(test_stocks, net_income_growth_list))
 pb_ratio_dict = dict(zip(test_stocks, pb_ratio_list))
-# retained_earnings_dict = dict(zip(test_stocks, retained_earnings_list))
 revenue_growth_dict = dict(zip(test_stocks, revenue_growth_list))
-# sales_dict = dict(zip(test_stocks, sales_list))
-# shareholders_dict = dict(zip(test_stocks, shareholders_list))
-# total_assets_dict = dict(zip(test_stocks, total_assets_list))
-# total_debt_dict = dict(zip(test_stocks, total_debt_list))
-# total_liabilities_dict = dict(zip(test_stocks, total_liabilities_list))
 z_score_dict = dict(zip(test_stocks, z_score_list))
 
 # # Create dataframes
-# df_current_assets = pd.DataFrame.from_dict(current_assets_dict)
-# df_current_liabilities = pd.DataFrame.from_dict(current_liabilities_dict)
 df_de_ratio = pd.DataFrame.from_dict(de_ratio_dict)
-# df_ebit = pd.DataFrame.from_dict(ebit_dict)
 df_gpm = pd.DataFrame.from_dict(gross_profit_margin_dict)
-# df_market_cap = pd.DataFrame.from_dict(market_cap_dict)
 df_net_income_growth = pd.DataFrame.from_dict(net_income_growth_dict)
 df_pb_ratio = pd.DataFrame.from_dict(pb_ratio_dict)
-# df_retained_earnings = pd.DataFrame.from_dict(retained_earnings_dict)
 df_revenue_growth = pd.DataFrame.from_dict(revenue_growth_dict)
-# df_sales = pd.DataFrame.from_dict(sales_dict)
-# df_shareholders = pd.DataFrame.from_dict(shareholders_dict)
-# df_total_assets = pd.DataFrame.from_dict(total_assets_dict)
-# df_total_debt = pd.DataFrame.from_dict(total_debt_dict)
-# df_total_liabilities = pd.DataFrame.from_dict(total_liabilities_dict)
 df_z_score = pd.DataFrame.from_dict(z_score_dict)
 
 dataframes = [df_de_ratio, df_gpm, df_net_income_growth, df_pb_ratio, df_revenue_growth, df_z_score]
 for df in dataframes:
-    df.insert(loc=0, column='Fiscal Years', value=fiscal_years_list)
-    print(df)
+    df.insert(loc=0, column='Fiscal Years', value=f_years)
+
