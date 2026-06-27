@@ -6,20 +6,12 @@ from financial_metrics import altman_z_score
 from financial_metrics import financial_statements
 from financial_metrics import fiscal_years
 from financial_metrics import statement_data
-load_dotenv()
 
+load_dotenv()
 fmp_api_key = os.getenv('FMP_API_KEY')
 
 test_stocks = ['AAPL', 'TSLA', 'AMZN']
 software_ind = ['Software - Application', 'Internet Content & Information',]
-# Manufacturing calculations
-# Altman Z-Score = 1.2A + 1.4B + 3.3C + 0.6D + 1.0E
-# Where:
-# A = working capital (current assets - current liabilities) / total assets
-# B = retained earnings / total assets
-# C = earnings before interest and tax / total assets
-# D = market value of equity / total liabilities
-# E = sales / total assets
 
 de_ratio_list = []
 gross_profit_margin_list = []
@@ -102,7 +94,21 @@ df_pb_ratio = pd.DataFrame.from_dict(pb_ratio_dict)
 df_revenue_growth = pd.DataFrame.from_dict(revenue_growth_dict)
 df_z_score = pd.DataFrame.from_dict(z_score_dict)
 
-dataframes = [df_de_ratio, df_gpm, df_net_income_growth, df_pb_ratio, df_revenue_growth, df_z_score]
-for df in dataframes:
+dataframes = {'de_ratio': df_de_ratio,
+              'gpm': df_gpm,
+              'net_income_growth': df_net_income_growth,
+              'pb_ratio': df_pb_ratio,
+              'revenue_growth': df_revenue_growth,
+              'altman_z_score': df_z_score}
+
+for df in dataframes.values():
     df.insert(loc=0, column='Fiscal Years', value=f_years)
 
+conn = sql.connect("../data/financial_metrics.db")
+cursor = conn.cursor()
+
+for name, df in dataframes.items():
+    cursor.execute(f"DROP TABLE IF EXISTS {name}")
+    df.to_sql(name, conn, if_exists='replace', index=False)
+
+conn.close()
