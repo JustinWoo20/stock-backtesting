@@ -1,16 +1,12 @@
 import numpy as np
 import yfinance as yf
-software_ind = ['Software - Application', 'Internet Content & Information',]
 
-def get_industry(ticker, industry_list):
+def get_industry(ticker):
     # Obtain company industry to determine if manufacturing or non-manufacturing
     yf_ticker = yf.Ticker(ticker)
     info = yf_ticker.info
     comp_industry = info['industry']
-    if comp_industry in industry_list:
-        return False
-    else:
-        return True
+    return comp_industry
 
 # Manufacturing calculations
 # Altman Z-Score = 1.2A + 1.4B + 3.3C + 0.6D + 1.0E

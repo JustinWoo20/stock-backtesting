@@ -63,16 +63,17 @@ for stock in test_stocks:
     # Total liabilities for z-score
     total_liabilities = statement_data.get_total_liabilities(balance=balance_sheet)
     # Obtain company industry
-    ind = altman_z_score.get_industry(ticker=stock, industry_list=software_ind)
-    if ind:
-        z_score = altman_z_score.calc_zscore_manufacturing(ta=total_assets, ca=current_assets, tl=total_liabilities,
-                                                 cl=current_liabilities, re=retained_earnings, ebit=ebit, s=sales,
-                                                 cap=mc)
-        z_score_list.append(z_score)
-    else:
+    ind = altman_z_score.get_industry(ticker=stock)
+    if ind in software_ind:
         z_score = altman_z_score.calc_zscore_nonmanufacturing(ta=total_assets, ca=current_assets, tl=total_liabilities,
                                                               cl=current_liabilities, re=retained_earnings, ebit=ebit,
                                                               sh=se)
+        z_score_list.append(z_score)
+
+    else:
+        z_score = altman_z_score.calc_zscore_manufacturing(ta=total_assets, ca=current_assets, tl=total_liabilities,
+                                                 cl=current_liabilities, re=retained_earnings, ebit=ebit, s=sales,
+                                                 cap=mc)
         z_score_list.append(z_score)
 
 # Get fiscal years
