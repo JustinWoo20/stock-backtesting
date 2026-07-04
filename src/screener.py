@@ -80,8 +80,9 @@ def compare_revenue_growth(comp_conn, industry_conn, metric, stock, year, indust
 
 # {'AAPL: {2021: 5, 2022: 3...}, 'TSLA: {2021; 3, 2022: 5...}}
 results_dict = {}
-inside_dict = {}
+
 for stock, industry in ind_dict.items():
+    inside_list = []
     for year in years:
         total_points = 0
         z_score_points = compare_z_score(comp_conn=conn1, metric='altman_z_score', stock=stock, year=year)
@@ -96,8 +97,12 @@ for stock, industry in ind_dict.items():
         total_points += ni_growth_points
         rev_growth_points = compare_revenue_growth(comp_conn=conn1, industry_conn=conn2, metric='revenue_growth', stock=stock, year=year, industry=industry)
         total_points += rev_growth_points
-        inside_dict[year] = total_points
-    results_dict[stock] = inside_dict
+        inside_list.append(total_points)
 
+    results_dict[stock] = inside_list
+
+screener_results = pd.DataFrame.from_dict(data=results_dict)
+screener_results.insert(value=years, loc=0, column='Fiscal Years')
+screener_results.to_csv('../data/screener_results.csv', index=False)
 conn1.close()
 conn2.close()
