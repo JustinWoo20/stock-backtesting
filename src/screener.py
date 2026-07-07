@@ -103,6 +103,11 @@ for stock, industry in ind_dict.items():
 
 screener_results = pd.DataFrame.from_dict(data=results_dict)
 screener_results.insert(value=years, loc=0, column='Fiscal Years')
-screener_results.to_csv('../data/screener_results.csv', index=False)
+conn3 = sql.connect("../data/screener_results.db")
+cursor3 = conn3.cursor()
+cursor3.execute("""DROP TABLE IF EXISTS screener_results""")
+screener_results.to_sql('screener_results', conn3, if_exists='replace', index=False)
+
 conn1.close()
 conn2.close()
+conn3.close()
