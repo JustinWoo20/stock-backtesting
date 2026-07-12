@@ -5,11 +5,13 @@ import sqlite3 as sql
 import yfinance as yf
 import os
 from dotenv import load_dotenv
-load_dotenv()
 
+load_dotenv()
+# TODO: Divide money based on length of list
 fmp_key = os.getenv('FMP_API_KEY')
 
-starting_money = 30000
+MONEY = 30000
+purchase_dict = {}
 
 conn = sql.connect("../data/screener_results.db")
 cursor = conn.cursor()
@@ -19,6 +21,7 @@ stocks = c[1:]
 
 years_query= pd.read_sql_query('SELECT "Fiscal Years" FROM screener_results', conn).values
 years = years_query.squeeze()
+years= years.tolist()
 
 def get_ranking(stock, year):
     # Returns the point values from the screener results database
@@ -28,30 +31,34 @@ def get_ranking(stock, year):
     return int(points)
 
 def get_stock_price(stock, target_date):
-    yfticker = yf.Ticker(stock)
-    price_history = yfticker.history(period='1d', start=target_date)
+    yf_ticker = yf.Ticker(stock)
+    price_history = yf_ticker.history(period='1d', start=target_date)
     closing_price = price_history['Close']
     return closing_price
 
-# def purchase_shares(price, money):
+def purchase_share(stock, target_date, cash):
+    price = get_stock_price(stock=stock, target_date=target_date)
+    shares = cash / price
+    return price, shares
 
 
 for y in years:
+    purchase_list = []
     for s in stocks:
         p = get_ranking(stock=s, year=y)
         if p >=5:
-            income_statement = get_income_statement(t=s, key=fmp_key)
-            income_statement.reverse()
-            for i in income_statement: # Automatically matches fiscal year with its respective filing date
-                if i['fiscalYear'] == y:
-                    filing_date = i['filingDate']
-                    stock_price = get_stock_price(stock=s, target_date=filing_date)
+            purchase_list.append(s)
+    # Add results to purchase dictionary that includes years as key and list of stocks as values
+    purchase_dict[y] = purchase_list
 
-
-
-
-        # else:
-        #     d = make_decision(number=p)
+for y, sl in purchase_dict.items():
+    for stock in sl:
+        income_statement = get_income_statement(t=stock, key=fmp_key)
+        income_statement.reverse()
+        for i in income_statement: # For matching fiscal year with filing date
+            if i['fiscalYear'] == y:
+                filing_date = i['filingDate']
+                stock_price = get_stock_price(stock=stock, target_date=i['filingDate'])
 
 conn.close()
 # def buy_decision(stock_dict):
