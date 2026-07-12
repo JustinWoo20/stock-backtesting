@@ -12,6 +12,7 @@ fmp_key = os.getenv('FMP_API_KEY')
 
 MONEY = 30000
 purchase_dict = {}
+purchased_list = []
 
 conn = sql.connect("../data/screener_results.db")
 cursor = conn.cursor()
@@ -53,12 +54,15 @@ for y in years:
 
 for y, sl in purchase_dict.items():
     for stock in sl:
+        if stock not in purchased_list:
+            purchased_list.append(stock)
         income_statement = get_income_statement(t=stock, key=fmp_key)
         income_statement.reverse()
         for i in income_statement: # For matching fiscal year with filing date
             if i['fiscalYear'] == y:
                 filing_date = i['filingDate']
                 stock_price = get_stock_price(stock=stock, target_date=i['filingDate'])
+
 
 conn.close()
 # def buy_decision(stock_dict):
