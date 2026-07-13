@@ -23,7 +23,7 @@ years = pd.read_sql_query("""
     FROM altman_z_score""", conn1)
 years = list(years['Fiscal Years'])
 years.reverse()
-# years = [int(y) for y in years]
+years = [int(y) for y in years]
 
 def get_company_value(conn, metric, stock, year):
     # Query financial metrics database to find a company's respective value

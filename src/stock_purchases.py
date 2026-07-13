@@ -1,5 +1,6 @@
 from datetime import datetime
 from financial_metrics.financial_statements import get_income_statement
+import math
 import pandas as pd
 import sqlite3 as sql
 import yfinance as yf
@@ -10,9 +11,17 @@ load_dotenv()
 # TODO: Divide money based on length of list
 fmp_key = os.getenv('FMP_API_KEY')
 
-MONEY = 30000
+MONEY = 10000
 purchase_dict = {}
-purchased_list = []
+current_holdings = []
+df_purchased = pd.DataFrame({
+    "Fiscal Years": pd.Series(dtype='int'),
+    "Filing Date": pd.Series(dtype='datetime64[ns]'),
+    "Company": pd.Series(dtype='str'),
+    "Purchase Price": pd.Series(dtype='float64'),
+    "Shares": pd.Series(dtype='int'),
+    "Type": pd.Series(dtype='str'),
+})
 
 conn = sql.connect("../data/screener_results.db")
 cursor = conn.cursor()
@@ -22,7 +31,7 @@ stocks = c[1:]
 
 years_query= pd.read_sql_query('SELECT "Fiscal Years" FROM screener_results', conn).values
 years = years_query.squeeze()
-years= years.tolist()
+years = years.tolist()
 
 def get_ranking(stock, year):
     # Returns the point values from the screener results database
@@ -53,39 +62,25 @@ for y in years:
     purchase_dict[y] = purchase_list
 
 for y, sl in purchase_dict.items():
+    y_string = str(y)
     for stock in sl:
-        if stock not in purchased_list:
-            purchased_list.append(stock)
+        if stock not in current_holdings:
+             current_holdings.append(stock)
         income_statement = get_income_statement(t=stock, key=fmp_key)
         income_statement.reverse()
         for i in income_statement: # For matching fiscal year with filing date
-            if i['fiscalYear'] == y:
+            if i['fiscalYear'] == y_string:
                 filing_date = i['filingDate']
+                purchase_date = datetime.strptime(filing_date, '%Y-%m-%d').date()
                 stock_price = get_stock_price(stock=stock, target_date=i['filingDate'])
-
+                stock_price = stock_price.iloc[0]
+                shares = math.floor(MONEY / stock_price)
+                new_row = pd.DataFrame([{"Fiscal Years": y,
+                                        "Filing Date": filing_date,
+                                        "Company": stock,
+                                         "Purchase Price": stock_price,
+                                         "Shares": shares,
+                                         "Type": "Purchase",}])
+                df_purchased = pd.concat([df_purchased, new_row])
 
 conn.close()
-# def buy_decision(stock_dict):
-#     for stock, years in stock_dict.items():
-#         for year in years:
-#             balance_sheet = get_balance_sheet(t=stock, key=fmp_key)
-#
-#
-#
-# for stock, years in test_dict.items():
-#     for y, points in years.items():
-#         if points >= 5:
-#             balance_sheet = get_balance_sheet(t=stock, key=fmp_key)
-#
-#
-#
-#
-
-# def get_yf_ticker(ticker):
-#     ticker_obj = yf.Ticker(ticker)
-#     h = ticker_obj.history(period='6y')
-#     print(h[h['Dividends'] != 0.0])
-#     print(h[h['Stock Splits'] != 0.0])
-#     dividends = ticker_obj.get_dividends()
-#     print(dividends)
-# get_yf_ticker('AAPL')
