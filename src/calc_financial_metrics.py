@@ -77,7 +77,7 @@ for stock in test_stocks:
     df_financial_metrics = pd.concat([df_financial_metrics, df_new_rows], ignore_index=True)
     metrics_column.clear()
 
-#     # P/B Ratio
+    # P/B Ratio
     pb_ratio = statement_data.get_pb_ratio(financial_ratios_stat)
     for x in range(0,5):
         metrics_column.append('pb_ratio')
