@@ -43,7 +43,7 @@ for stock in test_stocks:
     # D/E Ratio
     de_ratio = statement_data.get_de_ratio(fr=financial_ratios_stat)
     for x in range(0,5):
-        metrics_column.append('de_Ratio') # append metric name 5 times
+        metrics_column.append('de_ratio') # append metric name 5 times
     new_data = [f_years, file_date, stock_column, metrics_column, de_ratio]
     new_rows = dict(zip(column_names, new_data)) # Zip column names and new data  to concat to dataframe
     df_new_rows = pd.DataFrame.from_dict(new_rows,)
