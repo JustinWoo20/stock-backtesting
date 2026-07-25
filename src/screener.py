@@ -19,95 +19,122 @@ for stock in test_stocks:
     ind_dict[stock] = ind
 
 years = pd.read_sql_query("""
-    SELECT "Fiscal Years"
-    FROM altman_z_score""", conn1)
-years = list(years['Fiscal Years'])
-years.reverse()
-years = [int(y) for y in years]
+    SELECT DISTINCT fiscal_years
+    FROM financial_metrics""", conn1)
+years = list(years['fiscal_years'])
 
-def get_company_value(conn, metric, stock, year):
+def query_financial_metrics(conn):
+    query = "SELECT * FROM financial_metrics;"
+    df_financial_metrics = pd.read_sql_query(query, conn)
+    return df_financial_metrics
+df_fm = query_financial_metrics(conn1)
+
+def query_industry_averages(conn):
+    query = "SELECT * FROM industries;"
+    df_industry_averages = pd.read_sql_query(query, conn)
+    return df_industry_averages
+df_ia = query_industry_averages(conn2)
+
+def get_company_value(metric_name, data, ticker, year):
     # Query financial metrics database to find a company's respective value
-    query = f'SELECT {stock} FROM {metric} WHERE "Fiscal Years" = {year};'
-    results  = pd.read_sql_query(query, conn).squeeze()
-    return results
+    query_row = data.loc[(data['fiscal_years'] == year) &
+                         (data['stocks'] == ticker) &
+                         (data['key_metrics'] == metric_name)]
+    metric_value = query_row['value']
+    if len(metric_value) == 1:
+        return metric_value.iloc[0]
+    raise ValueError(
+        f"Expected 1 row for {metric_name}/{ticker}/{year}, got {len(query_row)}")
 
-def get_industry_value(conn, metric, industry):
+def get_industry_value(metric_name, industry, data):
     # Query the industry averages db to find the average value for a company's industry
-    query = f'SELECT {metric} from industries WHERE Industry = "{industry}"'
-    results = pd.read_sql_query(query, conn).squeeze()
-    return results
+    query_row = data.loc[data['Industry'] == industry]
+    industry_average = query_row[metric_name]
+    if len(industry_average) == 1:
+        return industry_average.iloc[0]
+    raise ValueError(
+        f"Expected 1 row for {metric_name}/{industry}, got {len(query_row)}")
 
-def compare_z_score(comp_conn, metric, stock, year):
-    company_value = get_company_value(conn=comp_conn, metric=metric, stock=stock, year=year)
+def compare_z_score(finance_data, ticker, year):
+    company_value = get_company_value(metric_name='altman_z_score', data=finance_data, ticker=ticker, year=year)
     if company_value >= 3:
         return 2
     elif company_value >= 2:
         return 1
     return 0
 
-def compare_gpm(comp_conn, industry_conn, metric, stock, year, industry):
-    company_value = get_company_value(conn=comp_conn, metric=metric, stock=stock, year=year)
-    industry_value = get_industry_value(conn=industry_conn, metric=metric, industry=industry)
-    if company_value >= industry_value:
+def compare_gpm(finance_data, industry_data, ticker, year, ind):
+    company_value = get_company_value(metric_name='gpm', data=finance_data, ticker=ticker, year=year)
+    industry_value = get_industry_value(metric_name='gpm', industry=ind, data=industry_data)
+    if company_value > industry_value:
         return 1
     return 0
 
-def compare_pb_ratio(comp_conn, industry_conn, metric, stock, year, industry):
-    company_value = get_company_value(conn=comp_conn, metric=metric, stock=stock, year=year)
-    industry_value = get_industry_value(conn=industry_conn, metric=metric, industry=industry)
-    if company_value < industry_value:
+def compare_pb_ratio(finance_data, industry_data, ticker, year, ind):
+    company_value = get_company_value(metric_name='pb_ratio', data=finance_data, ticker=ticker, year=year)
+    industry_value = get_industry_value(metric_name='pb_ratio', industry=ind, data=industry_data)
+    if company_value > industry_value:
         return 1
     return 0
 
-def compare_de_ratio(comp_conn, industry_conn, metric, stock, year, industry):
-    company_value = get_company_value(conn=comp_conn, metric=metric, stock=stock, year=year)
-    industry_value = get_industry_value(conn=industry_conn, metric=metric, industry=industry)
-    if company_value < industry_value:
+def compare_de_ratio(finance_data, industry_data, ticker, year, ind):
+    company_value = get_company_value(metric_name='de_ratio', data=finance_data, ticker=ticker, year=year)
+    industry_value = get_industry_value(metric_name='de_ratio', industry=ind, data=industry_data)
+    if company_value > industry_value:
         return 1
     return 0
 
-def compare_net_income_growth(comp_conn, metric, stock, year):
-    company_value = get_company_value(conn=comp_conn, metric=metric, stock=stock, year=year)
+def compare_net_income_growth(finance_data, ticker, year):
+    company_value = get_company_value(metric_name='net_income_growth', data=finance_data, ticker=ticker, year=year)
     if company_value > 0:
         return 1
     return 0
 
-def compare_revenue_growth(comp_conn, industry_conn, metric, stock, year, industry):
-    company_value = get_company_value(conn=comp_conn, metric=metric, stock=stock, year=year)
-    industry_value = get_industry_value(conn=industry_conn, metric=metric, industry=industry)
-    if company_value >= industry_value:
+def compare_revenue_growth(finance_data, industry_data, ticker, year, ind):
+    company_value = get_company_value(metric_name='revenue_growth', data=finance_data, ticker=ticker, year=year)
+    industry_value = get_industry_value(metric_name='revenue_growth', industry=ind, data=industry_data)
+    if company_value > industry_value:
         return 1
     return 0
 
-# {'AAPL: {2021: 5, 2022: 3...}, 'TSLA: {2021; 3, 2022: 5...}}
-results_dict = {}
+def get_filing_dates(year, finance_data, ticker):
+    query_row = finance_data.loc[(finance_data['fiscal_years'] == year) &
+                         (finance_data['stocks'] == ticker) &
+                         (finance_data['key_metrics'] == 'de_ratio')]
+    fd = query_row['filing_date'].iloc[0]
+    return fd
+
+rows = []
 
 for stock, industry in ind_dict.items():
-    inside_list = []
     for year in years:
         total_points = 0
-        z_score_points = compare_z_score(comp_conn=conn1, metric='altman_z_score', stock=stock, year=year)
+        z_score_points = compare_z_score(finance_data=df_fm, ticker=stock, year=year)
         total_points += z_score_points
-        gpm_points = compare_gpm(comp_conn=conn1, industry_conn=conn2, metric='gpm', stock=stock, year=year, industry=industry)
+        gpm_points = compare_gpm(finance_data=df_fm, industry_data=df_ia, ticker=stock, year=year, ind=industry)
         total_points += gpm_points
-        pb_points = compare_pb_ratio(comp_conn=conn1, industry_conn=conn2, metric='pb_ratio', stock=stock, year=year, industry=industry)
+        pb_points = compare_pb_ratio(finance_data=df_fm, industry_data=df_ia, ticker=stock, year=year, ind=industry)
         total_points += pb_points
-        de_points = compare_de_ratio(comp_conn=conn1, industry_conn=conn2, metric='de_ratio', stock=stock, year=year, industry=industry)
+        de_points = compare_de_ratio(finance_data=df_fm, industry_data=df_ia, ticker=stock, year=year, ind=industry)
         total_points += de_points
-        ni_growth_points = compare_net_income_growth(comp_conn=conn1, metric='net_income_growth', stock=stock, year=year)
+        ni_growth_points = compare_net_income_growth(finance_data=df_fm, ticker=stock, year=year)
         total_points += ni_growth_points
-        rev_growth_points = compare_revenue_growth(comp_conn=conn1, industry_conn=conn2, metric='revenue_growth', stock=stock, year=year, industry=industry)
+        rev_growth_points = compare_revenue_growth(finance_data=df_fm, industry_data=df_ia, ticker=stock, year=year, ind=industry)
         total_points += rev_growth_points
-        inside_list.append(total_points)
+        file_date = get_filing_dates(year=year, finance_data=df_fm, ticker=stock)
+        rows_to_add = {
+            'fiscal_years': year,
+            'filing_date': file_date,
+            'stocks': stock,
+            'result': total_points,
+        }
+        rows.append(rows_to_add)
 
-    results_dict[stock] = inside_list
-
-screener_results = pd.DataFrame.from_dict(data=results_dict)
-screener_results.insert(value=years, loc=0, column='Fiscal Years')
+df_results = pd.DataFrame(data=rows, columns=['fiscal_years', 'filing_date', 'stocks', 'result'])
 conn3 = sql.connect("../data/screener_results.db")
 cursor3 = conn3.cursor()
 cursor3.execute("""DROP TABLE IF EXISTS screener_results""")
-screener_results.to_sql('screener_results', conn3, if_exists='replace', index=False)
+df_results.to_sql('screener_results', conn3, if_exists='replace', index=False)
 
 conn1.close()
 conn2.close()

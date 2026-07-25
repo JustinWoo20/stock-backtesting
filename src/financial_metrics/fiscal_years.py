@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import datetime
 
 def get_fiscal_years(balance):
     fiscal_years = []
@@ -13,7 +13,7 @@ def get_filing_dates(balance):
     filing_dates = []
     for year in balance:
         filing_date = year['filingDate']
-        filing_date = date.strptime(filing_date, "%Y-%m-%d")
+        filing_date = datetime.strptime(filing_date, "%Y-%m-%d").date()
         filing_dates.append(filing_date)
 
     return filing_dates
