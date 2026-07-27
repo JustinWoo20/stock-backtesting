@@ -6,7 +6,6 @@ import sqlite3 as sql
 import yfinance as yf
 import os
 from dotenv import load_dotenv
-# TODO: Fix get stock price function
 
 load_dotenv()
 fmp_key = os.getenv('FMP_API_KEY')
@@ -20,6 +19,7 @@ df_purchased = pd.DataFrame({
     "stocks": pd.Series(dtype='str'),
     "purchase_price": pd.Series(dtype='float64'),
     "shares": pd.Series(dtype='int'),
+    "total_value": pd.Series(dtype='float64'),
     "purchase_type": pd.Series(dtype='str'),
 })
 
@@ -44,30 +44,60 @@ def get_ranking(stock, year, screener_results):
     # Returns the point values from the screener results database
     target_row = screener_results.loc[(screener_results['fiscal_years'] == year) &
                                  (screener_results['stocks'] == stock)]
-    points = target_row['result']
+    points = target_row['result'].iloc[0]
     return points
+
+def get_filing_date(stock, year, screener_results):
+    # Returns the filing date
+    target_row = screener_results.loc[(screener_results['fiscal_years'] == year) &
+                                      (screener_results['stocks'] == stock)]
+    filing_date = target_row['filing_date'].iloc[0]
+    return filing_date
+
+def get_purchase_price(stock, target_date):
+    yf_ticker = yf.Ticker(stock)
+    price_history = yf_ticker.history(period='1y', start=target_date)
+    start_price = price_history.iloc[0]['Close']
+    return start_price
+
+def purchase_shares(stock, target_date, cash):
+    purchase_price = get_purchase_price(stock=stock, target_date=target_date)
+    no_of_shares = cash / purchase_price
+    shares_int = math.floor(no_of_shares)
+    value_inv = shares_int * purchase_price
+    return purchase_price, shares_int, value_inv
+
 # split the for loop into 2 parts
 # Part 1 is just for the first year
 # Part 2 is for any subsequent year
-for y in years:
-    for s in stocks:
-        p = get_ranking(stock=s, year=y, screener_results=df_screened)
-        if p > 5:
-            current_holdings.append(s)
+
+# Year 1
+for s in stocks:
+    p = get_ranking(stock=s, year=first_year, screener_results=df_screened)
+    if p > 5:
+        current_holdings.append(s)
+
+# Calculate amount of cash to invest in each company in the initial year
+cash_per_co = MONEY / len(current_holdings)
+
+#Purchase stocks for the first year
+for s in current_holdings:
+    fd = get_filing_date(stock=s, year=first_year, screener_results=df_screened)
+    price, shares, value = purchase_shares(stock=s, target_date=fd, cash=cash_per_co)
+    new_row_data = [first_year, fd, s, price, shares, value, 'Buy']
+    new_row_dict = dict(zip(df_purchased.columns, new_row_data))
+    df_new_row = pd.DataFrame([new_row_dict])
+    df_purchased = pd.concat([df_purchased, df_new_row], ignore_index=True)
+
+# for y in years:
+#     for s in stocks:
+#         p = get_ranking(stock=s, year=y, screener_results=df_screened)
+#         if p > 5:
+#             current_holdings.append(s)
 
 
 
-#
-# def get_purchase_price(stock, target_date):
-#     yf_ticker = yf.Ticker(stock)
-#     price_history = yf_ticker.history(period='1y', start=target_date)
-#     start_price = price_history.iloc[0]['Close']
-#     return start_price
-#
-# def purchase_share(stock, target_date, cash):
-#     price = get_purchase_price(stock=stock, target_date=target_date)
-#     shares = cash / price
-#     return price, shares
+
 #
 #
 # for y in years:
