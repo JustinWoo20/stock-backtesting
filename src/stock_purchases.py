@@ -74,28 +74,35 @@ def get_split_data(stock,):
     df_splits['Date'] = pd.to_datetime(df_splits['Date']).dt.date
     return df_splits
 
+def get_dividends(stock,):
+    ticker = yf.Ticker(stock)
+    dividends_req = ticker.get_dividends(period='7y')
+    df_dividends = dividends_req.to_frame('dividends')
+    df_dividends = df_dividends.reset_index()
+    df_dividends['Date'] = pd.to_datetime(df_dividends['Date']).dt.date
+    return df_dividends
 
 # split the for loop into 2 parts
 # Part 1 is just for the first year
 # Part 2 is for any subsequent year
 
 # Year 1
-# for s in stocks:
-#     p = get_ranking(stock=s, year=first_year, screener_results=df_screened)
-#     if p > 5:
-#         current_holdings.append(s)
-#
-# # Calculate amount of cash to invest in each company in the initial year
-# cash_per_co = MONEY / len(current_holdings)
-#
-# #Purchase stocks for the first year
-# for s in current_holdings:
-#     fd = get_filing_date(stock=s, year=first_year, screener_results=df_screened)
-#     price, shares, value = purchase_shares(stock=s, target_date=fd, cash=cash_per_co)
-#     new_row_data = [first_year, fd, s, price, shares, value, 'Buy']
-#     new_row_dict = dict(zip(df_purchased.columns, new_row_data))
-#     df_new_row = pd.DataFrame([new_row_dict])
-#     df_purchased = pd.concat([df_purchased, df_new_row], ignore_index=True)
+for s in stocks:
+    p = get_ranking(stock=s, year=first_year, screener_results=df_screened)
+    if p > 5:
+        current_holdings.append(s)
+
+# Calculate amount of cash to invest in each company in the initial year
+cash_per_co = MONEY / len(current_holdings)
+
+#Purchase stocks for the first year
+for s in current_holdings:
+    fd = get_filing_date(stock=s, year=first_year, screener_results=df_screened)
+    price, shares, value = purchase_shares(stock=s, target_date=fd, cash=cash_per_co)
+    new_row_data = [first_year, fd, s, price, shares, value, 'Buy']
+    new_row_dict = dict(zip(df_purchased.columns, new_row_data))
+    df_new_row = pd.DataFrame([new_row_dict])
+    df_purchased = pd.concat([df_purchased, df_new_row], ignore_index=True)
 
 # Check dividends and splits
 
