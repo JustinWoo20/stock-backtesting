@@ -1,4 +1,5 @@
 from datetime import datetime
+from dateutil.relativedelta import relativedelta
 import math
 import pandas as pd
 import sqlite3 as sql
@@ -12,13 +13,12 @@ fmp_key = os.getenv('FMP_API_KEY')
 MONEY = 30000
 purchase_dict = {}
 current_holdings = []
-df_purchased = pd.DataFrame({
+df_purchases = pd.DataFrame({
     "fiscal_years": pd.Series(dtype='int'),
-    "filing_date": pd.Series(dtype='datetime64[ns]'),
+    "purchase_date": pd.Series(dtype='datetime64[ns]'),
     "stocks": pd.Series(dtype='str'),
-    "purchase_price": pd.Series(dtype='float64'),
+    "price": pd.Series(dtype='float64'),
     "shares": pd.Series(dtype='int'),
-    "total_value": pd.Series(dtype='float64'),
     "purchase_type": pd.Series(dtype='str'),
 })
 
@@ -51,6 +51,7 @@ def get_filing_date(stock, year, screener_results):
     target_row = screener_results.loc[(screener_results['fiscal_years'] == year) &
                                       (screener_results['stocks'] == stock)]
     filing_date = target_row['filing_date'].iloc[0]
+    filing_date = datetime.strptime(filing_date, '%Y-%m-%d').date()
     return filing_date
 
 def get_purchase_price(stock, target_date):
@@ -66,17 +67,31 @@ def purchase_shares(stock, target_date, cash):
     value_inv = shares_int * purchase_price
     return purchase_price, shares_int, value_inv
 
-def get_split_data(stock,):
+def get_split_data(stock, f_year, screener_results):
     ticker = yf.Ticker(stock)
-    splits_req = ticker.get_splits(period='7y')
-    df_splits = splits_req.to_frame('splits')
-    df_splits = df_splits.reset_index()
+    splits_req = ticker.get_splits(period='5y') # Obtains stock splits from the previous 5 years
+    df_splits = splits_req.to_frame('splits').reset_index()
     df_splits['Date'] = pd.to_datetime(df_splits['Date']).dt.date
-    return df_splits
+    split_date = df_splits['Date'].iloc[0]
+    split_amount = df_splits['splits'].iloc[0]
+    start_row = screener_results.loc[(screener_results['fiscal_years'] == f_year) &
+                                  (screener_results['stocks'] == stock)] # Finds purchase date
+    next_year = f_year + 1
+    end_row = screener_results.loc[(screener_results['fiscal_years'] == next_year) &
+                                (screener_results['stocks'] == stock)] # Finds end of the holding period
+    start_date = start_row['filing_date'].iloc[0]
+    end_date = end_row['filing_date'].iloc[0]
+    start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+    end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+
+    if start_date < split_date < end_date:
+        return split_date, split_amount
+    else:
+        return None
 
 def get_dividends(stock,):
     ticker = yf.Ticker(stock)
-    dividends_req = ticker.get_dividends(period='7y')
+    dividends_req = ticker.get_dividends(period='5y')
     df_dividends = dividends_req.to_frame('dividends')
     df_dividends = df_dividends.reset_index()
     df_dividends['Date'] = pd.to_datetime(df_dividends['Date']).dt.date
@@ -95,17 +110,19 @@ for s in stocks:
 # Calculate amount of cash to invest in each company in the initial year
 cash_per_co = MONEY / len(current_holdings)
 
-#Purchase stocks for the first year
 for s in current_holdings:
+    # Purchase stocks for the first year
     fd = get_filing_date(stock=s, year=first_year, screener_results=df_screened)
+    next_fd = get_filing_date(stock=s, year=first_year+1, screener_results=df_screened)
     price, shares, value = purchase_shares(stock=s, target_date=fd, cash=cash_per_co)
-    new_row_data = [first_year, fd, s, price, shares, value, 'Buy']
-    new_row_dict = dict(zip(df_purchased.columns, new_row_data))
+    new_row_data = [first_year, fd, s, price, shares, 'Buy']
+    new_row_dict = dict(zip(df_purchases.columns, new_row_data))
     df_new_row = pd.DataFrame([new_row_dict])
-    df_purchased = pd.concat([df_purchased, df_new_row], ignore_index=True)
+    df_purchases = pd.concat([df_purchases, df_new_row], ignore_index=True)
+    # Check for stock splits
+    split_date, split_amount = get_split_data(stock=s, f_year=first_year, screener_results=df_screened)
 
-# Check dividends and splits
-
+# print(df_purchases)
 # for y in years:
 #     for s in stocks:
 #         p = get_ranking(stock=s, year=y, screener_results=df_screened)
